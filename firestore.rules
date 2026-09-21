@@ -1,0 +1,41 @@
+rules_version = '2';
+
+// Aturan keamanan untuk koleksi "submissions" (jawaban kuesioner CAPS).
+//
+// - Siapa saja boleh MENGIRIM jawaban baru (create) — ini dibutuhkan karena
+//   peserta mengisi kuesioner tanpa login.
+// - Siapa saja bisa MEMBACA (read) dan MENGHAPUS (delete) data lewat SDK ini,
+//   karena dashboard admin di aplikasi ini tidak memakai Firebase
+//   Authentication — gerbang admin hanya berupa kata sandi di sisi tampilan
+//   (client-side), BUKAN proteksi database yang sesungguhnya.
+// - Tidak ada yang boleh MENGUBAH (update) jawaban yang sudah masuk.
+//
+// PENTING (soal keamanan):
+// Karena "read" dan "delete" terbuka untuk siapa saja yang tahu URL/API key,
+// orang yang cukup teknis bisa membaca ATAU MENGHAPUS seluruh data peserta
+// langsung lewat Firestore, bukan hanya lewat halaman admin. Jika data ini
+// sensitif, upgrade nanti ke Firebase Authentication (mis. login
+// email/password untuk admin) dan ubah baris "allow read" / "allow delete"
+// di bawah menjadi "if request.auth != null;"
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /submissions/{submissionId} {
+      allow create: if true;
+      allow read: if true;
+      allow delete: if true;
+      allow update: if false;
+    }
+
+    // Koleksi "batches" — dibuat/dihapus dari Dashboard Admin (menu "Kelola
+    // Batch Peserta"). Peserta hanya membaca nama batch (lewat link
+    // ?batch=... atau dropdown), tidak pernah membuat/menghapusnya sendiri.
+    match /batches/{batchId} {
+      allow create: if true;
+      allow read: if true;
+      allow delete: if true;
+      allow update: if false;
+    }
+  }
+}
+
